@@ -38,10 +38,10 @@ const { color } = require('./lib/color.js')
 const { pinterest } = require("./lib/pinterest.js")
 const { webp2mp4File } = require("./lib/cv.js")
 const { upload } = require("./lib/uploads.js")
-const { addPlayGame, getJawabanGame, isPlayGame, cekWaktuGame, getGamePosi } = require("./lib/game.js");
 const { TiktokDownloader } = require("./lib/scraper/tiktokdl.js")
+const { addPlayGame, getJawabanGame, isPlayGame, cekWaktuGame, getGamePosi } = require("./lib/game.js");
+const { addPrem, deletePrem, checkPrem} = require("./lib/prem2.js");
 const { twitter } = require("./lib/scraper/twitter.js")
-const { yta } = require('./lib/yta.js')
 const { exec, spawn, execSync } = require("child_process")
 const _prem = require("./lib/premium");
 const Replicate = require('replicate')
@@ -72,6 +72,8 @@ const { smsg, formatp, tanggal, formatDate, getTime, isUrl, sleep, clockString, 
 /// DATABASE
 let antilink = JSON.parse(fs.readFileSync('./assets/db/antilink.json'));
 let premium = JSON.parse(fs.readFileSync('./assets/db/premium.json'));
+const prem2 = JSON.parse(fs.readFileSync('./assets/db/prem2.json'))
+
 
 module.exports = bob = async (bob, m, chatUpdate, store) => {
     try {
@@ -292,6 +294,27 @@ module.exports = bob = async (bob, m, chatUpdate, store) => {
             preview: await cropped.normalize().getBufferAsync(jimp_1.MIME_JPEG)
         }
     }
+    //WELCOME
+    bob.ev.on('group-participants.update', async (data) => {
+    try {
+    let metadata = await bob.groupMetadata(data.id)
+      for (let i of data.participants) {
+      try {
+        var pp_user = await bob.profilePictureUrl(i, 'image')
+      } catch {
+        var pp_user = 'https://i0.wp.com/www.gambarunik.id/wp-content/uploads/2019/06/Top-Gambar-Foto-Profil-Kosong-Lucu-Tergokil-.jpg'
+      }
+      if (data.action == "add") {
+                    bob.sendMessage(data.id, {caption: `Selamat Datang @${i.split("@")[0]} Di Grup ${metadata.subject}`, image: {url: pp_user}, mentions: [i]})
+      } else if (data.action == "remove") {
+                    bob.sendMessage(data.id, {caption: `Byeee @${i.split("@")[0]} 👋`, image: {url: pp_user}, mentions: [i]})
+      }
+      }
+    } catch (e) {
+      console.log(e)
+    }
+    }
+  )   
     
     // GAME 
     cekWaktuGame(bob, tebakgambar)
@@ -482,6 +505,7 @@ _*NOTE : Anggap "< dan > tidak ada!"*_
 - ${prefix}tohd < Reply Image >
 - ${prefix}take < PackName|Author >
 - ${prefix}tts < Text >
+- ${prefix}jadianime _< Reply Image >_
 
 *Maker Menu*
 - ${prefix}sketch-logo _< Text >_
@@ -522,6 +546,7 @@ _*NOTE : Anggap "< dan > tidak ada!"*_
 - ${prefix}locked
 - ${prefix}unlocked
 - ${prefix}close
+- ${prefix}totag _< Reply Image/Text/Video/Sticker/Audio >_
 - ${prefix}promote _< Reply Chat >_
 - ${prefix}demote _< Reply Chat >_
 
@@ -731,6 +756,20 @@ ${isi}
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=star-wars-logo&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
                 }
                     break
+                    case 'jadianime': {
+                        reply(mess.wait)
+                    if ( isImage || isQuotedImage ) {
+                        var mek = await downloadAndSaveMediaMessage(`image`, 'upload.jpg')
+                        var tot = await upload(fs.readFileSync('upload.jpg'))
+                        var keynya = `akusayangmamah`
+                        var elink  = `https://api.vamses.xyz/api/image/jadianime?url=${tot}&apikey=${keynya}`
+                        bob.sendMessage(m.chat, {image: {url: elink}, caption: `jadi`})
+                    } else {
+                            reply(`Kirim gambar/video dengan caption: ${command}`)
+                    }
+                }
+
+                    break
                     // Game
                     case 'tebakgambar': {
                     if (isPlayGame(m.chat, tebakgambar)) return reply(m.chat, `Masih ada game yang belum diselesaikan`, tebakgambar[getGamePosi(m.chat, tebakgambar)].m)
@@ -859,10 +898,12 @@ ${isi}
                     }
                     break
                     case 'menfess': {
+                        if (!q) return reply(`Masukan Text!\nExample : ${prefix}menfess no|pesan`)
+                        if (!number) return reply(`Masukan Nomernya.\nExample : ${CmD} +6288213292687`)
+                        if (!textnyaku) return reply(`Masukan Pesan nya.\nExample : ${CmD} +6288213292687`)
                         var number = q.split('|')[0] ? q.split('|')[0] : q
                         var textnyaku = q.split('|')[1] ? q.split('|')[1] : ''
                         if (m.isGroup)return reply('Hanya Bisa Di Gunakan Private Message')
-                        if (!q) return reply(`Masukan Text!\nExample : ${prefix}menfess no|pesan`)
                         var caption = `*[ FITUR BOT MENFESS/SURAT ]*\n\nDari : Tidak Diketahui\nUntuk : Kamu\nPesan : *${textnyaku}*`
                         var button = [{ buttonId: `.cnfrmmen ${m.sender}`, buttonText: { displayText: `Menfess Confirmasi` }, type: 1 }]
                         var img = fs.readFileSync('./media/surat.jpeg')
@@ -1200,6 +1241,50 @@ ${isi}
 				bob.sendMessage(m.chat, { text: q ? q : '', mentions: mem }, {quoted: m})
                     }
                     break
+                    case 'totag': case 'tagbot': {
+                        if (!m.isGroup) return reply(global.mess.group)
+                        if (!isGroupAdmins) return reply(global.mess.admin)
+                        if (isImage) {
+                        let mem = [];
+                        participants.map( i => mem.push(i.id) )
+                        let media = await bob.downloadMediaMessage(qmsg)
+                        let encmedia = await bob.sendImageAsSticker(m.chat, media, m, {packname: global.packname, author: global.author, mentions: mem })
+                        await fs.unlinkSync(encmedia)
+                    } else if (isQuotedImage ) {
+                        let mem = [];
+                        participants.map( i => mem.push(i.id) )
+                        var kodeid = otpkode(5)
+                        var mediaku = await downloadAndSaveMediaMessage("image", `${kodeid}` + `.jpg`)
+                        bob.sendMessage(m.chat, {caption: quoted.caption, image: fs.readFileSync(kodeid + `.jpg`), mentions: mem})
+                        setTimeout( () => {
+                            fs.unlinkSync(kodeid + `.jpg`)
+                            }, 5000) // 1000 = 1s,
+                        } else if (isQuotedVideo ) {
+                            let mem = [];
+                            participants.map( i => mem.push(i.id) )
+                            var kodeid = otpkode(5)
+                            var mediaku = await downloadAndSaveMediaMessage("video", `${kodeid}` + `.mp4`)
+                            bob.sendMessage(m.chat, {caption: quoted.caption, video: fs.readFileSync(kodeid + `.mp4`), mentions: mem})
+                            setTimeout( () => {
+                                fs.unlinkSync(kodeid + `.mp4`)
+                                }, 5000) // 1000 = 1s,
+                            } else if (isQuotedAudio) {
+                        let mem = [];
+                        participants.map( i => mem.push(i.id) )
+                        var kodeid = otpkode(5)
+                        var mediaku = await downloadAndSaveMediaMessage("audio", `${kodeid}` + `.mp3`)
+                        bob.sendMessage(m.chat, {audio: fs.readFileSync(kodeid + `.mp3`), mimetype: `audio/mp4`, ptt: true, mentions: mem})
+                        setTimeout( () => {
+                        fs.unlinkSync(kodeid + `.mp3`)
+                        }, 5000) // 1000 = 1s,
+                        } else {
+                        let mem = [];
+                        participants.map( i => mem.push(i.id) )
+                        bob.sendMessage(m.chat, {text: quoted.text, mentions: mem})
+                        }
+                        
+                }
+                    break
                      case 'tagall': {
                         if (!m.isGroup) return reply(global.mess.group)
                         if (!isGroupAdmins) return reply(global.mess.admin)
@@ -1487,18 +1572,31 @@ ${isi}
                     }}
                     break
                     //Akhir Downloader
-                    /*Premium Cuy
-                    case 'cekprem':
-                    case 'cekpremium': {
-                    if (!isPremium) return reply(`Maaf!, Kamu Bukan User Premium Untuk Saat Ini :(\nUpgrade Fitur Premium Yuk!. Ketik ${prefix}owner`)
-                    if (_prem.getPremiumExpired(m.sender, premium) == "PERMANENT") return reply(`PERMANENT`)
-                    let cekvip = ms(_prem.getPremiumExpired(m.sender, premium) - Date.now())
-                    let premiumnya = `*Expire :* ${cekvip.days} day(s) ${cekvip.hours} hour(s) ${cekvip.minutes} minute(s)`
-                    reply(premiumnya)
-                    break
-                    }
-                    */
                     // Owner Menu
+                    case 'addprem': {
+                        let namaprem = q.split("|")[0]
+                        let nomorprem = q.split("|")[1]
+                        if (checkPrem(nomorprem, prem2) === true) return reply(`Database Sudah Di Tambahkan`)
+                        addPrem(namaprem, nomorprem.replace(/[-|+| |]/gi, '') + "@s.whatsapp.net", prem2)
+                        var textanjay = `*[ ADD PREMIUM ]*\nNama : ${namaprem}\nNomer Prem : ${nomorprem}`
+                        bob.sendMessage(m.chat, {text: textanjay})
+                    }
+                        break
+                    break
+                    case prefix+'listprem':
+                    let txt = `List Prem\nJumlah : ${premium.length}\n\n`
+                    let men = [];
+                    for (let i of premium) {
+                    men.push(i.id)
+                    txt += `*ID :* @${i.id.split("@")[0]}\n`
+                    if (i.expired === 'PERMANENT') {
+                    let cekvip = 'PERMANENT'
+                    txt += `*Expire :* PERMANENT\n\n`
+                    } else {
+                    let cekvip = ms(i.expired - Date.now())
+                    txt += `*Expire :* ${cekvip.days} day(s) ${cekvip.hours} hour(s) ${cekvip.minutes} minute(s) ${cekvip.seconds} second(s)\n\n`
+                    }
+                    }
 
 
                     case 'setpp': case 'setppbot':{
@@ -1569,8 +1667,8 @@ ${isi}
                     if (!isCreator) return reply(global.mess.owner)
                     for ( let i of store.chats.all()) {
                     setTimeout( () => {
-                        var judule = `*[ JOJO BROADCAST ]*\n\n`
-                        bob.sendMessage(i.id, {image: fs.readFileSync(`media/logo.png`), caption: judule + q})
+                        var judule = `*[ JOJO BROADCAST ]*\n\n- _WAJIB BACA!_\n`
+                        bob.sendMessage(i.id, {text: judule + q})
                     }, 1000) // 1000 = 1s,
                     }
                     }

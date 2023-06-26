@@ -15,7 +15,7 @@ global.ownerName = 'Arasya'
 global.packname = 'My Sticker'
 global.author = 'Sticker Saya'
 global.gamewaktu = 50
-global.prefa = ['','!','.']
+global.prefa = ['#']
 global.mess = {
     success: '✓ Success',
     admin: 'Fitur Khusus Admin Group!',
