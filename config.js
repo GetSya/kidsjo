@@ -14,6 +14,7 @@ global.botName = 'JOJO - BOT'
 global.ownerName = 'Arasya'
 global.packname = 'My Sticker'
 global.author = 'Sticker Saya'
+global.limitCount = 20
 global.gamewaktu = 50
 global.prefa = ['#']
 global.mess = {
