@@ -40,6 +40,7 @@ const { webp2mp4File } = require("./lib/cv.js")
 const { upload } = require("./lib/uploads.js")
 const { TiktokDownloader } = require("./lib/scraper/tiktokdl.js")
 const { addPlayGame, getJawabanGame, isPlayGame, cekWaktuGame, getGamePosi } = require("./lib/game.js");
+const { isLimit, limitAdd, getLimit, giveLimit, addBalance, kurangBalance, getBalance } = require("./lib/limit.js");
 const { addPrem, deletePrem, checkPrem} = require("./lib/prem2.js");
 const { twitter } = require("./lib/scraper/twitter.js")
 const { exec, spawn, execSync } = require("child_process")
@@ -67,12 +68,16 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);*/
 const { smsg, formatp, tanggal, formatDate, getTime, isUrl, sleep, clockString, runtime, fetchJson, getBuffer, jsonformat, format, parseMention, otpkode, makeid, getRandom, getGroupAdmins } = require('./lib/function')
+const { P } = require('pino')
 
 
 /// DATABASE
 let antilink = JSON.parse(fs.readFileSync('./assets/db/antilink.json'));
 let premium = JSON.parse(fs.readFileSync('./assets/db/premium.json'));
-const prem2 = JSON.parse(fs.readFileSync('./assets/db/prem2.json'))
+let prem2 = JSON.parse(fs.readFileSync('./assets/db/prem2.json'));
+let limit = JSON.parse(fs.readFileSync('./assets/db/limit.json'));
+let balance = JSON.parse(fs.readFileSync('./assets/db/balance.json'));
+let glimit = JSON.parse(fs.readFileSync('./assets/db/glimit.json'));
 
 
 module.exports = bob = async (bob, m, chatUpdate, store) => {
@@ -81,7 +86,6 @@ module.exports = bob = async (bob, m, chatUpdate, store) => {
         const content = JSON.stringify(m.message)
         var budy = (typeof m.text == 'string' ? m.text : '')
         var prefix = prefa ? /^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@#$%/^&.©^]/gi.test(body) ? body.match(/^[°•π÷×¶/∆£¢€¥®™+✓_=|~!?@#$%^&.©^]/gi)[0] : "/" : prefa ?? global.prefix
-
         const isCmd = body.startsWith(prefix)
         const command = body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
         const CmD = body.slice(0).trim().split(/ +/).shift().toLowerCase()
@@ -111,6 +115,9 @@ module.exports = bob = async (bob, m, chatUpdate, store) => {
         const isGroupAdmins = groupAdmins.includes(m.sender)
         const isBotGroupAdmins = groupAdmins.includes(botNumber) || false
         const isAntiLink = m.isGroup ? antilink.includes(m.chat) : false
+
+        const sender = m.isGroup ? (m.key.participant ? m.key.participant : m.participant) : m.key.remoteJid
+
 
         //Extensi Media Message
         const isImage = (m.mtype == 'imageMessage')
@@ -236,6 +243,9 @@ module.exports = bob = async (bob, m, chatUpdate, store) => {
 		      return res
  		    }
 		}
+        function monospace(string) {
+            return '```' + string + '```'
+            }
         const sendContact = (jid, numbers, name, quoted, mn) => {
 			let number = numbers.replace(/[^0-9]/g, '')
 			const vcard = 'BEGIN:VCARD\n' 
@@ -364,6 +374,8 @@ module.exports = bob = async (bob, m, chatUpdate, store) => {
     let yutu = `https://youtu${m.text.slice(13)}`
 
 if (m.text.includes(yutu)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = yutu
 var yt = await dl.youtubedl(url).catch(async () => await  dl.youtubedl(url))
 var dl_url = await yt.audio['128kbps'].download()
@@ -372,6 +384,8 @@ bob.sendMessage(m.chat, {document: {url: dl_url}, fileName: yt.title + `.mp3`, m
 let tt = `https://vt.tiktok${m.text.slice(17)}`
 
 if (m.text.includes(tt)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = tt
 dl.savefrom(url).then ( data => {
 reply(`*[ TIKTOK ]*\n\nTitle : ${data[0].meta.title}\nDurasi : ${data[0].meta.duration}\n\n_Wait A Minute._`)
@@ -381,6 +395,8 @@ bob.sendMessage(m.chat, {video: {url: data[0].url[0].url}, caption: data[0].meta
 let tt2 = `https://www.tiktok.com/${m.text.slice(23)}`
 
 if (m.text.includes(tt2)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = tt2
 dl.savefrom(url).then ( data => {
 reply(`*[ TIKTOK ]*\n\nTitle : ${data[0].meta.title}\nDurasi : ${data[0].meta.duration}\n\n_Wait A Minute._`)
@@ -390,6 +406,8 @@ bob.sendMessage(m.chat, {video: {url: data[0].url[0].url}, caption: data[0].meta
 let tt3 = `https://vm.tiktok${m.text.slice(17)}`
 
 if (m.text.includes(tt3)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = tt3
 dl.savefrom(url).then ( data => {
 reply(`*[ TIKTOK ]*\n\nTitle : ${data[0].meta.title}\nDurasi : ${data[0].meta.duration}\n\n_Wait A Minute._`)
@@ -399,6 +417,8 @@ bob.sendMessage(m.chat, {video: {url: data[0].url[0].url}, caption: data[0].meta
 let fbdl = `https://www.facebook.com/${m.text.slice(25)}`
 
 if (m.text.includes(fbdl)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = fbdl
 dl.savefrom(url).then ( data => {
 reply(`*[ FACEBOOK ]*\n\nTitle : ${ data[0].meta.title}\nSize : HD\n\n_Wait A Minute._`)
@@ -408,6 +428,8 @@ bob.sendMessage(m.chat, {video: {url: data[0].hd.url}, caption: data[0].meta.tit
 let igdl = `https://www.instagram.com/${m.text.slice(26)}`
 
 if (m.text.includes(igdl)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = igdl
 reply(`*[ INSTAGRAM ]*\n\n_Wait A Minute._`)
 instagram(url).then( data => {
@@ -424,6 +446,8 @@ bob.sendMessage(m.chat, { caption: `Sukses, Follow Instagram : @arsrfii`, image:
 let twt = `https://twitter.com/${m.text.slice(20)}`
 
 if (m.text.includes(twt)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = twt
 dl.savefrom(url).then( data => {
 reply(`*[ TWITTER ]*\n\nTitle : ${data[0].meta.title}\n\n_Wait A Minute._`)
@@ -438,6 +462,8 @@ bob.sendMessage(m.chat, {image: { url: data[0].url[1].url }})
 let cp = `https://www.capcut.com/${m.text.slice(23)}`
 
 if (m.text.includes(cp)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = cp
 capcut(url).then ( data => {
 reply(`*[ CAPCUT ]*\n\nUsername : ${data.nama}\nUsed : ${data.used} Pemakai\n\n_Wait A Minute._`)
@@ -448,6 +474,8 @@ bob.sendMessage(m.chat, {video: {url: data.video}, caption: `${data.used} Telah 
 let mediafired = `https://www.mediafire.com/${m.text.slice(26)}`
 
 if (m.text.includes(mediafired)) {
+    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
 var url = mediafired
 dl.mediafiredl(url).then ( data => {
 reply(`*[ MEDIAFIRE ]*\n\nName : ${data.filename}\nSize : ${data.filesizeH}\nFormat : ${data.ext}\nFileType :  ${data.filetype}\n\n_Wait A Minute._`)
@@ -455,8 +483,18 @@ bob.sendMessage(m.chat, {document: {url: data.url}, fileName: data.filename, mim
 } )
 }
     
+function randomNomor(min, max = null) {
+    if (max !== null) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+    } else {
+    return Math.floor(Math.random() * min) + 1
+    }
+    }
         // Push Message To Console && Auto Read
         if (m.message) {
+            addBalance(m.sender, randomNomor(60), balance)
             bob.readMessages([m.key])           
         }
 
@@ -520,6 +558,11 @@ _*NOTE : Anggap "< dan > tidak ada!"*_
 - ${prefix}tebakkata
 - ${prefix}siapakahaku
 - ${prefix}tebaklagu
+
+*Bank Menu*
+- ${prefix}limit
+- ${prefix}topbalance
+- ${prefix}buylimit _< Jumlah Limit Yang Ingin DiBeli >_
 
 *Owner Menu*
 - ${prefix}setpp _< Reply Gambar >_
@@ -721,49 +764,65 @@ ${isi}
 
                 //Flaming Logo
                 case 'sketch-logo': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
                     if (!q) throw (`Silahkan Masukan Text\nExample : #sketch-logo arasyaku`)
                     reply('Tunggu Sebentar!\nSedang Membuat 🔃')
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=sketch-name&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
+                    limitAdd(m.sender, limit)
                 }
                     break
                 case 'comic-logo': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
                     if (!q) throw (`Silahkan Masukan Text\nExample : #comic-logo arasyaku`)
                     reply('Tunggu Sebentar!\nSedang Membuat 🔃')
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=comics-logo&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
+                    limitAdd(sender, limit)
                 }
                     break
                 case 'water-logo': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q) throw (`Silahkan Masukan Text\nExample : #water-logo arasyaku`)
                     reply('Tunggu Sebentar!\nSedang Membuat 🔃')
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=water-logo&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
                 }
                     break
                 case 'style-logo': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q) throw (`Silahkan Masukan Text\nExample : #style-logo arasyaku`)
                     reply('Tunggu Sebentar!\nSedang Membuat 🔃')
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=style-logo&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
                 }
                     break
                 case 'runner-logo': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q) throw (`Silahkan Masukan Text\nExample : #runner-logo arasyaku`)
                     reply('Tunggu Sebentar!\nSedang Membuat 🔃')
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=runner-logo&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
                 }
                     break
                 case 'starwars-logo': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q) throw (`Silahkan Masukan Text\nExample : #starwars-logo arasyaku`)
                     reply('Tunggu Sebentar!\nSedang Membuat 🔃')
                     bob.sendMessage(m.chat, {caption: q, image: {url: `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=star-wars-logo&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&text=${q}`}}, {quoted: m})
                 }
                     break
                     case 'jadianime': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         reply(mess.wait)
                     if ( isImage || isQuotedImage ) {
                         var mek = await downloadAndSaveMediaMessage(`image`, 'upload.jpg')
                         var tot = await upload(fs.readFileSync('upload.jpg'))
                         var keynya = `akusayangmamah`
-                        var elink  = `https://api.vamses.xyz/api/image/jadianime?url=${tot}&apikey=${keynya}`
-                        bob.sendMessage(m.chat, {image: {url: elink}, caption: `jadi`})
+                        setTimeout( () => {
+                            var elink  = `https://api.vamses.xyz/api/image/jadianime?url=${tot}&apikey=${keynya}`
+                            bob.sendMessage(m.chat, {image: {url: elink}, caption: `jadi`})
+                            }, 3000) // 1000 = 1s,
                     } else {
                             reply(`Kirim gambar/video dengan caption: ${command}`)
                     }
@@ -772,6 +831,8 @@ ${isi}
                     break
                     // Game
                     case 'tebakgambar': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (isPlayGame(m.chat, tebakgambar)) return reply(m.chat, `Masih ada game yang belum diselesaikan`, tebakgambar[getGamePosi(m.chat, tebakgambar)].m)
                     var tg = JSON.parse(fs.readFileSync('./assets/tebakgambar.json'))
                     var data = pickRandom(tg)
@@ -784,6 +845,8 @@ ${isi}
                     })}
                     break
                     case 'tebakkata': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (isPlayGame(m.chat, tebakkata)) return bob.reply(m.chat, `Masih ada game yang belum diselesaikan`, tebakkata[getGamePosi(m.chat, tebakkata)].m)
                     var tg = JSON.parse(fs.readFileSync('./assets/tebakkata.json'))
                     var data = pickRandom(tg)
@@ -796,6 +859,8 @@ ${isi}
                     })}
                     break
                     case 'siapakahaku': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (isPlayGame(m.chat, siapakahaku)) return bob.reply(m.chat, `Masih ada game yang belum diselesaikan`, siapakahaku[getGamePosi(m.chat, siapakahaku)].m)
                     var tg = JSON.parse(fs.readFileSync('./assets/siapakahaku.json'))
                     var data = pickRandom(tg)
@@ -808,6 +873,8 @@ ${isi}
                     })}
                     break
                     case 'caklontong': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (isPlayGame(m.chat, caklontong)) return bob.reply(m.chat, `Masih ada game yang belum diselesaikan`, caklontong[getGamePosi(m.chat, caklontong)].m)
                     var tg = JSON.parse(fs.readFileSync('./assets/caklontong.json'))
                     var data = pickRandom(tg)
@@ -820,6 +887,8 @@ ${isi}
                     })}
                     break
                     case 'tebaklagu': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (isPlayGame(m.chat, tebaklagu)) return bob.reply(m.chat, `Masih ada game yang belum diselesaikan`, tebaklagu[getGamePosi(m.chat, tebaklagu)].m)
                     var tg = JSON.parse(fs.readFileSync('./assets/tebaklagu.json'))
                     var data = pickRandom(tg)
@@ -835,12 +904,14 @@ ${isi}
                     // Akhir Game
                     //Lain Lain
                     case 'removebg': case 'rb':{
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!isQuotedImage && !isImage)return reply(`Kirim Gambar dengan caption ${CmD} atau reply gambar dengan text ${CmD}!`)
                     if (isQuotedImage || isImage ) {
                     reply(global.mess.wait + `\nTunggu 5 Detik`)
                     var tete = await downloadAndSaveMediaMessage('image', 'rmvbg.jpg')
                     var tot = await upload(fs.readFileSync('rmvbg.jpg'))
-                    rmvbg.rbFromImageUrl(tot, `k4jvHw9V9kkFEptijkNPUdfc`) //ini api punya guehhhhh
+                    rmvbg.rbFromImageUrl(tot, `5CwCfA9u2xaY9RYfuqpD7wXe`) //ini api punya guehhhhh
                     await sleep(5000)
                     bob.sendMessage(m.chat, {caption: `AI-` + otpkode(6) + `.png`, image: fs.readFileSync('output-2.png')}, {quoted: m})
                     }
@@ -849,6 +920,8 @@ ${isi}
                     }
                     break
                     case 'toimg':{
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!/webp/.test(mime)) return m.reply(`Reply sticker dengan caption *${prefix + command}*`)
                         m.reply('Wait bang...')
                         let media = await bob.downloadAndSaveMediaMessage(qmsg)
@@ -863,6 +936,8 @@ ${isi}
                     }
                     break
                     case 'quotes': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         var kotes2 = JSON.parse(fs.readFileSync('./assets/quotes.json'))
                         var hasil = pickRandom(kotes2)
                         var img = fs.readFileSync('./media/icon.png')
@@ -875,6 +950,8 @@ ${isi}
                     }
                     break
                     case 'tts': case 'sbot' :{
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!args.length === "12") return reply(`Text Terlalu Panjang`)
                         config(tiktokresi);
                         createAudioFromText(q, 'myAudio', 'id_001')
@@ -883,6 +960,8 @@ ${isi}
                     }
                     break
                     case 'ttsjp': case 'jpbot' :{
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!args.length === "12") return reply(`Text Terlalu Panjang`)
                         config(tiktokresi);
                         createAudioFromText(q, 'myAudio', 'jp_001')
@@ -891,6 +970,8 @@ ${isi}
                     }
                     break
                     case 'songb': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         config(tiktokresi);
                         createAudioFromText(q, 'songb', 'id_001')
                         await sleep(3000)
@@ -898,6 +979,8 @@ ${isi}
                     }
                     break
                     case 'menfess': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!q) return reply(`Masukan Text!\nExample : ${prefix}menfess no|pesan`)
                         if (!number) return reply(`Masukan Nomernya.\nExample : ${CmD} +6288213292687`)
                         if (!textnyaku) return reply(`Masukan Pesan nya.\nExample : ${CmD} +6288213292687`)
@@ -943,6 +1026,8 @@ ${isi}
                     }
                     break*/
                     case 'pinterest': case 'pin': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         reply(global.mess.wait)
                         if (!q) return reply(`Masukan Text\nExample : ${prefix}pinterest Pegunungan`)
                         dl.pinterest(q).then ( data => {
@@ -951,6 +1036,8 @@ ${isi}
                     }
                     break
                     case 'esrgan': case 'tohd': case 'bagusin':{
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!isImage && !isQuotedImage) return reply(`Reply Gambar Atau Kirim Gambar dengan caption ${CmD}`)
                         reply(global.mess.wait + `\nTunggu 1 Menit Kurang`)
                         try {
@@ -975,6 +1062,8 @@ ${isi}
                     }
                     break
                     case 'ssweb': case 'ss': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q) return reply(`Masukan Text!\nExample ${CmD} https://youtube.com`)
                     if (q.includes('xnxx') && q.includes('pornhub')) return reply("Bokep Mulu Pikiran nya")
                     reply(global.mess.wait)
@@ -982,6 +1071,8 @@ ${isi}
                     }
                     break
                     case 'gempa': case 'infogempa': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         dl.gempa().then ( data => {
                             var text = `*[ INFO GEMPA TERKINI ]*\n\n*Locate :* ${data[0].locate}\n*Warning :* ${data[0].warning[0]}\n*Tanggal :* ${data[0].date}\n*Magnitude :* ${data[0].magnitude}\n*Jarak :* ${data[0].depth}\n*Desk :* ${data[0].location}`
                             sendbut(m.chat, text, `#dashboard`, `Back To Menu 🔙`, tgl + ' ' + jam)
@@ -990,6 +1081,8 @@ ${isi}
                     }
                     break
                     case 'news': case 'liputan6': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!m.isGroup) {
                         
                         var teskd = `YOUTUBE SEARCH\n\n`
@@ -1046,6 +1139,8 @@ ${isi}
                          }
                          break
                          case 'take': case 'swm': case 'stickerwm': case 'ambil': {
+                            if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         try {
                         if (!isImage && !isQuotedImage && !isQuotedSticker) return reply(`Kirim/Reply Gambar/Reply Sticker Dengan PackName Dan Author\nExample : ${CmD} ${pushname}|Sticker Aku`)
                             let packnem = q.split("|")[0]
@@ -1069,6 +1164,8 @@ ${isi}
                            }}}
                              break
                     case 'tourl': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!isImage && !isQuotedImage) return reply(`Reply Gambar Atau Kirim Gambar dengan caption ${prefix}tourl`)
                         if ( isImage || isQuotedImage ) {
                             var mek = await downloadAndSaveMediaMessage(`image`, 'upload.jpg')
@@ -1087,6 +1184,8 @@ ${isi}
                     } 
                     break
                     case 'stcmeme': case 'smeme': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!isImage && !isQuotedImage && !isQuotedSticker) return reply(`Reply Gambar Atau Kirim Gambar dengan caption ${prefix}stcmeme Kamu|Wibu`)
                         let name = q.split("|")[0]
                         let isi = q.split("|")[1]
@@ -1105,6 +1204,8 @@ ${isi}
                     } 
                     break
                     case 'stcmeme2': case 'smeme2': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!isImage && !isQuotedImage) return reply(`Reply Gambar Atau Kirim Gambar dengan caption ${prefix}stcmeme Kamu|Wibu`)
                         if (!q) return reply(`Masukan Text!\nExample : ${prefix}stcmeme2 Anjay`)
                         reply('Proses Membuat...')
@@ -1121,6 +1222,8 @@ ${isi}
                     } 
                     break
                     case 'memegen': case 'memeg': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!isImage && !isQuotedImage) return reply(`Reply Gambar Atau Kirim Gambar dengan caption ${prefix}memegen Kamu|Wibu`)
                         reply(global.mess.wait)
                         let name = q.split("|")[0]
@@ -1139,11 +1242,57 @@ ${isi}
                     } 
                     break
                     case 'tstik': case 'tstick': case 'ttp':{
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!q) return reply(`Masukan Text!\nExample : ${CmD} Aku`)
                         reply(`Bentar`)
                         let encmedia = await bob.sendImageAsSticker(m.chat, `https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=comics-logo&doScale=true&scaleWidth=500&scaleHeight=500&fontsize=160&text=${q}`, m, { packname: global.packname, author: global.author })
                     }
                     break
+                    ///BANK 
+                    case 'topbalance': {
+                        
+                        balance.sort((a, b) => (a.balance < b.balance) ? 1 : -1)
+                        let top = '*── 「 TOP BALANCE 」 ──*\n\n'
+                        let arrTop = []
+                        var total = 10
+                        if (balance.length < 10) total = balance.length
+                        for (let i = 0; i < total; i ++){
+                        top += `${i + 1}. @${balance[i].id.split("@")[0]}\n=> Balance : $${balance[i].balance}\n\n`
+                        arrTop.push(balance[i].id)
+                        }
+                        ngetag(top, arrTop, true)
+                        
+                    }
+                    break
+                    case 'limit': case 'balance': {
+                    var limitPrib = `${getLimit(m.sender, limitCount, limit)}/${limitCount}`
+                    reply(`Limit : ${limitPrib}\nBalance : $${getBalance(m.sender, balance)}\n\nKamu dapat membeli limit dengan ${prefix}buylimit dan ${prefix}buyglimit untuk membeli game limit`)
+                    }
+                    break
+                    case 'buylimit': {
+                    if (!q) return reply(`Kirim perintah *${prefix}buylimit* jumlah limit yang ingin dibeli\n\nHarga 1 limit = $500 balance`)
+                    if (!q) return reply(`Jangan menggunakan -`)
+                    if (isNaN(q)) return reply(`Harus berupa angka`)
+                    let ane = Number(parseInt(q) * 500)
+                    if (getBalance(sender, balance) < ane) return reply(`Balance kamu tidak mencukupi untuk pembelian ini`)
+                    kurangBalance(sender, ane, balance)
+                    giveLimit(sender, parseInt(q), limit)
+                    reply(monospace(`Pembeliaan limit sebanyak ${args[1]} berhasil\n\nSisa Balance : $${getBalance(sender, balance)}\nSisa Limit : ${getLimit(sender, limitCount, limit)}/${limitCount}`))
+                                        }
+                    break
+                    case 'cheatbalance':{
+                    if (!isCreator) return reply(`Lo Siapa?`)
+                    if (quoted) { 
+                    addBalance(quoted.sender, `9999999999`, balance)
+                    reply(`Sukses Ngecheat BALANCE ke nomer : ${quoted.sender}`)
+                    } else {
+                        addBalance(q.replace(/[-|+| |]/gi, '') + "@s.whatsapp.net", `9999999999`, balance)
+                    reply(`Sukses Ngecheat BALANCE ke nomer : ${q.replace(/[-|+| |]/gi, '') + "@s.whatsapp.net"}`)
+                    }
+                    }
+                    break
+                    //akhir
                     //GROUP MENU
                     case 'setppgc': case 'setppgrup':{
                     if (!isGroupAdmins) return reply(global.mess.admin)
@@ -1189,6 +1338,8 @@ ${isi}
             }
                 break
                 case 'chat': case 'qc': case 'fm': {
+                    if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     try{
                         if (!q) return m.reply('Missing parameter text')
                         const name = pushname
@@ -1242,14 +1393,26 @@ ${isi}
                     }
                     break
                     case 'totag': case 'tagbot': {
+                        if (!isQuotedAudio && !isQuotedImage && !isQuotedSticker && !isQuotedVideo && q) return reply(`Silahkan Reply Audio/Image/Sticker/Video/Text Dengan Text : ${CmD}`)
                         if (!m.isGroup) return reply(global.mess.group)
                         if (!isGroupAdmins) return reply(global.mess.admin)
-                        if (isImage) {
-                        let mem = [];
-                        participants.map( i => mem.push(i.id) )
-                        let media = await bob.downloadMediaMessage(qmsg)
-                        let encmedia = await bob.sendImageAsSticker(m.chat, media, m, {packname: global.packname, author: global.author, mentions: mem })
-                        await fs.unlinkSync(encmedia)
+                        if (isQuotedSticker) {
+
+                            if (/image/.test(mime)) {
+                                let mem = [];
+                                participants.map( i => mem.push(i.id) )
+                                let media = await bob.downloadMediaMessage(qmsg)
+                                let encmedia = await bob.sendImageAsSticker(m.chat, media, m, {packname: `Tag Hide Dari Grup`, author: groupMetadata.subject, mentions: mem })
+                                await fs.unlinkSync(encmedia)
+                            } else if (/video/.test(mime)) {
+                                reply(global.mess.wait)
+                                let mem = [];
+                                participants.map( i => mem.push(i.id) )
+                                let media = await bob.downloadMediaMessage(qmsg)
+                                    let encmedia = await bob.sendVideoAsSticker({packname: `Tag Hide Dari Grup`, author: groupMetadata.subject, mentions: mem })
+                                    await fs.unlinkSync(encmedia)
+                                }
+                        
                     } else if (isQuotedImage ) {
                         let mem = [];
                         participants.map( i => mem.push(i.id) )
@@ -1423,6 +1586,8 @@ ${isi}
                     }
                     break*/
                      case 'ytmp4': case 'ytv': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         try {
                             if (!q) return reply(`Masukan Text\nExample ${prefix}ytv https://youtu.be/GDND88fqt1o`)
                             if (!q.includes('youtu.be') && !q.includes('youtube.com')) return reply(global.mess.linkinv)
@@ -1459,6 +1624,8 @@ ${isi}
                     }
                     break*/
                     case 'ytmp3': case 'yta': case'ytaudio': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!q) return reply(`Masukan Text\nExample ${CmD} https://youtu.be/GDND88fqt1o`)
                         if (!q.includes('yout')) return reply(global.mess.linkinv)
                         reply(global.mess.wait)
@@ -1470,15 +1637,20 @@ ${isi}
                     }
                     break
                     case 'tt': case 'tiktok':  {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!q) return reply(`Masukan Text\nExample ${prefix}tiktok https://vm.tiktok.com/ZS8CoY9UX/`)
                         if (!q.includes('tiktok')) return reply(global.mess.linkinv)
                         reply(global.mess.wait)
-                        dl.tiktokdl(q).then ( data => {
-                            bob.sendMessage(m.chat, {caption: "Sukses Mendownload Video.", video: {url: data.video.no_watermark_hd}}, {quoted: m})
-                        })
+                        dl.savefrom(q).then ( data => {
+                            reply(`*[ TIKTOK ]*\n\nTitle : ${data[0].meta.title}\nDurasi : ${data[0].meta.duration}\n\n_Wait A Minute._`)
+                            bob.sendMessage(m.chat, {video: {url: data[0].url[0].url}, caption: data[0].meta.title})
+                            })
                     }
                     break
                     case 'igdl': case 'instagram': case 'ig':
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q)return reply(`Berikan Link\nExample : ${CmD} link`)
                     if (!isUrl(q)) return reply(`Link Ga Sesuai`)
                     if (!q.includes('instagram.com')) return reply(`Link Ga Sesuai`)
@@ -1494,6 +1666,8 @@ ${isi}
                     }).catch(() => reply(`ERORR. Postingan tidak Tersedia`))
 			    break
                     case 'igstory': case 'igs':
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!q)return reply(`Berikan Username nya\nExample : ${CmD} arsrfii`)
                     reply(`Scanning Username ${q}`)
                     var storis = `https://instagram.com/stories/` + q
@@ -1508,6 +1682,8 @@ ${isi}
                     }).catch(() => reply(`Story Eror!, Mungkin karena di private atau username tidak ada dan mungkin bisa saja dia tidak buat story`))
 			    break
                     case 'mediafire': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!q) return reply(`Masukan Text\nExample ${CmD} https://www.mediafire.com/file/l8b3te4g1p8z354/module.zip/file`)
                         if (!q.includes('mediafire.com')) return reply(global.mess.linkinv)
                         reply(global.mess.wait)
@@ -1518,6 +1694,8 @@ ${isi}
                     }
                     break
                     case 'play': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                         if (!q) return reply(`Masukan Text Setelah Perintah!\n\n*Example For Voice Not* : ${CmD} Jakarta Hari Ini - For revenge --vn\n*Example For Document :* ${CmD} Jakarta Hari Ini - For revenge -doc\n*Example For Video :* ${CmD} Jakarta Hari Ini - For revenge --video`)
                         reply(global.mess.wait)
                         var pasu = `ptt`
@@ -1554,6 +1732,8 @@ ${isi}
                     }}
                     break
                     case 'yts': case 'ytsearch': {
+                        if (isLimit(m.sender, limitCount, limit)) return reply (`Limit kamu sudah habis silahkan kirim ${prefix}limit untuk mengecek limit`)
+                    limitAdd(sender, limit)
                     if (!m.isGroup) {
                     if (!q) return reply(`Masukan Text\nExample ${prefix}yts Jakarta Hari Ini - For Revenge`)
                     var teskd = `YOUTUBE SEARCH\n\n`
