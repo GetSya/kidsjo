@@ -304,27 +304,6 @@ module.exports = bob = async (bob, m, chatUpdate, store) => {
             preview: await cropped.normalize().getBufferAsync(jimp_1.MIME_JPEG)
         }
     }
-    //WELCOME
-    bob.ev.on('group-participants.update', async (data) => {
-    try {
-    let metadata = await bob.groupMetadata(data.id)
-      for (let i of data.participants) {
-      try {
-        var pp_user = await bob.profilePictureUrl(i, 'image')
-      } catch {
-        var pp_user = 'https://i0.wp.com/www.gambarunik.id/wp-content/uploads/2019/06/Top-Gambar-Foto-Profil-Kosong-Lucu-Tergokil-.jpg'
-      }
-      if (data.action == "add") {
-                    bob.sendMessage(data.id, {caption: `Selamat Datang @${i.split("@")[0]} Di Grup ${metadata.subject}`, image: {url: pp_user}, mentions: [i]})
-      } else if (data.action == "remove") {
-                    bob.sendMessage(data.id, {caption: `Byeee @${i.split("@")[0]} 👋`, image: {url: pp_user}, mentions: [i]})
-      }
-      }
-    } catch (e) {
-      console.log(e)
-    }
-    }
-  )   
     
     // GAME 
     cekWaktuGame(bob, tebakgambar)
