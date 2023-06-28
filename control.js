@@ -47,7 +47,7 @@ const { exec, spawn, execSync } = require("child_process")
 const _prem = require("./lib/premium");
 const Replicate = require('replicate')
   const replicate = new Replicate({
-  auth: "r8_bfR97gOX91GIY1zvWc5c4NneELAwhOp4PDMz4", //Api Gueh
+  auth: "r8_IrWhmFuiXDTW4y0ZVXvBB6ODmH56ifn1mTjWa", //Api Gueh
 });
 
 
